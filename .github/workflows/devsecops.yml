@@ -115,9 +115,11 @@ jobs:
             --failOnCVSS 7
             --enableRetired
 
-            
+
       - name: Upload Report
         uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: dependency-scan-report
           path: reports/
+
