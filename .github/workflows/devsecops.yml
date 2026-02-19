@@ -87,4 +87,4 @@ jobs:
           directory: ./coverage/lcov-report/
           flags: unittests
           name: codecov-umbrella
-          files: clover.xml
+          files: ./clover.xml
