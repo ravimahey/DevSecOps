@@ -157,6 +157,21 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
+      
+      - name: Check for Docker file changes
+        id: changes
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            docker:
+              - 'Dockerfile'
+              - '**/Dockerfile'
+              - 'docker-compose.yml'
+              - '**/docker-compose.yml'
+
+      - name: Run Container Scan
+        if: steps.changes.outputs.docker == 'true'
+        run: echo "Docker files changed. Running scan..."
 
       - name: Build Docker image
         run: |
