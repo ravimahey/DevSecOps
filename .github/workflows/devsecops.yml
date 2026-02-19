@@ -98,7 +98,7 @@ jobs:
         with:
           project: 'Dep Check'
           path: '.'
-          format: 'HTML,SARIF,JSON'
+          format: 'ALL'
           out: 'reports'
           args: >
             --failOnCVSS 7
