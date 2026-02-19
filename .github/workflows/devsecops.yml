@@ -82,9 +82,6 @@ jobs:
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          env_vars: OS,PYTHON
-          fail_ci_if_error: true
-          directory: ./coverage/lcov-report/
           flags: unittests
           name: codecov-umbrella
-          files: ./clover.xml
+          files: "./coverage/lcov.info"
