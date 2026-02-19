@@ -86,14 +86,14 @@ jobs:
           name: codecov-umbrella
           files: "./coverage/lcov.info"
 
-  dependency-check:
-    name: OWASP Dependency Check
+  dependency-scan:
+    name: OWASP Dependency Scanning
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
       
-      - name: Run OWASP Dependency Check
+      - name: Run OWASP Dependency Scanning
         uses: dependency-check/Dependency-Check_Action@main
         with:
           project: 'Dep Check'
@@ -185,3 +185,152 @@ jobs:
         if: always()
         with:
           sarif_file: 'grype-results.sarif'
+
+  validation-summary:
+    name: Validation Summary
+    runs-on: ubuntu-latest
+    needs: [
+      secret-scanning,
+      code-quality,
+      unit-tests,
+      dependency-scan,
+      sast-analysis,
+      container-security,
+    ]
+    if: always()
+    
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v3
+
+      - name: Validation Summary
+        run: |
+          echo "## 🛡️ Security & Quality Validation Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Check each job status
+          if [ "${{ needs.secret-scanning.result }}" == "success" ]; then
+            echo "✅ **Secret Scanning**: Passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Secret Scanning**: Failed" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [ "${{ needs.code-quality.result }}" == "success" ]; then
+            echo "✅ **Code Quality & Linting**: Passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Code Quality & Linting**: Failed" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [ "${{ needs.unit-tests.result }}" == "success" ]; then
+            echo "✅ **Unit Tests**: Passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Unit Tests**: Failed" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [ "${{ needs.dependency-scan.result }}" == "success" ]; then
+            echo "✅ **OWASP Dependency Scan**: Passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **OWASP Dependency Scan**: Failed" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [ "${{ needs.sast-analysis.result }}" == "success" ]; then
+            echo "✅ **SAST Analysis**: Passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **SAST Analysis**: Failed" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          # Container security only runs if Docker files changed
+          if [ "${{ needs.container-security.result }}" == "success" ]; then
+            echo "✅ **Container Security**: Passed" >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ needs.container-security.result }}" == "skipped" ]; then
+            echo "⏭️ **Container Security**: Skipped (no Docker changes)" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Container Security**: Failed" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          # IaC security only runs if YAML files changed
+          if [ "${{ needs.iac-security.result }}" == "success" ]; then
+            echo "✅ **Infrastructure Security**: Passed" >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ needs.iac-security.result }}" == "skipped" ]; then
+            echo "⏭️ **Infrastructure Security**: Skipped (no IaC changes)" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Infrastructure Security**: Failed" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📊 Overall Status" >> $GITHUB_STEP_SUMMARY
+          
+          # Calculate overall status
+          failed_jobs=0
+          [ "${{ needs.secret-scanning.result }}" != "success" ] && failed_jobs=$((failed_jobs + 1))
+          [ "${{ needs.code-quality.result }}" != "success" ] && failed_jobs=$((failed_jobs + 1))
+          [ "${{ needs.unit-tests.result }}" != "success" ] && failed_jobs=$((failed_jobs + 1))
+          [ "${{ needs.dependency-scan.result }}" != "success" ] && failed_jobs=$((failed_jobs + 1))
+          [ "${{ needs.sast-analysis.result }}" != "success" ] && failed_jobs=$((failed_jobs + 1))
+          
+          if [ $failed_jobs -eq 0 ]; then
+            echo "🎉 **All critical checks passed! PR is ready for review.**" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ **$failed_jobs critical check(s) failed. Please address before merging.**" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+
+  pr-status-check:
+    name: PR Status Check
+    runs-on: ubuntu-latest
+    needs: [
+      secret-scanning,
+      code-quality,
+      unit-tests,
+      dependency-scan,
+      sast-analysis
+    ]
+    if: always()
+    
+    steps:
+      - name: Check Critical Requirements
+        run: |
+          # Define critical jobs that must pass
+          critical_jobs=(
+            "secret-scanning"
+            "code-quality" 
+            "unit-tests"
+            "dependency-scan"
+            "sast-analysis"
+          )
+          
+          failed_critical=0
+          
+          # Check each critical job status
+          if [ "${{ needs.secret-scanning.result }}" != "success" ]; then
+            echo "❌ Critical job secret-scanning failed with status: ${{ needs.secret-scanning.result }}"
+            failed_critical=$((failed_critical + 1))
+          fi
+          
+          if [ "${{ needs.code-quality.result }}" != "success" ]; then
+            echo "❌ Critical job code-quality failed with status: ${{ needs.code-quality.result }}"
+            failed_critical=$((failed_critical + 1))
+          fi
+          
+          if [ "${{ needs.unit-tests.result }}" != "success" ]; then
+            echo "❌ Critical job unit-tests failed with status: ${{ needs.unit-tests.result }}"
+            failed_critical=$((failed_critical + 1))
+          fi
+          
+          if [ "${{ needs.dependency-scan.result }}" != "success" ]; then
+            echo "❌ Critical job dependency-scan failed with status: ${{ needs.dependency-scan.result }}"
+            failed_critical=$((failed_critical + 1))
+          fi
+          
+          if [ "${{ needs.sast-analysis.result }}" != "success" ]; then
+            echo "❌ Critical job sast-analysis failed with status: ${{ needs.sast-analysis.result }}"
+            failed_critical=$((failed_critical + 1))
+          fi
+          
+          if [ $failed_critical -gt 0 ]; then
+            echo "🚫 PR cannot be merged: $failed_critical critical security/quality checks failed"
+            echo "Please review the failed jobs and fix the issues before merging."
+            exit 1
+          else
+            echo "✅ All critical checks passed. PR is ready for merge consideration."
+          fi
