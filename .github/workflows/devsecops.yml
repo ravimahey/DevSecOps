@@ -93,17 +93,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
 
-      # - name: Run OWASP dep-scan
-      #   run: |
-      #     docker run --rm \
-      #       -v ${{ github.workspace }}:/src \
-      #       owasp/dependency-check:latest \
-      #       --project "MyApp" \
-      #       --scan /src \
-      #       --format HTML \
-      #       --out /src/reports \
-      #       --failOnCVSS 7
-
+      - name: Test npm audit
+        run: npm audit --json
+      
       - name: Run OWASP Dependency Check
         uses: dependency-check/Dependency-Check_Action@main
         with:
