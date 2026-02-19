@@ -11,10 +11,10 @@ permissions:
   actions: read
 
 jobs:
-  # Job 1: Secret Detection
   secret-scanning:
     name: Secret Detection
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -24,7 +24,7 @@ jobs:
       - name: Run TruffleHog OSS
         uses: trufflesecurity/trufflehog@main
         with:
-          path: ./
+          path: './'
           base: ${{ github.event.repository.default_branch }}
           head: HEAD
           extra_args: --debug --only-verified
