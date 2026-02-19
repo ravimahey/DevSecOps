@@ -43,5 +43,4 @@ ENV NODE_ENV=production
 # Expose port
 EXPOSE 3030
 
-# Entry point for production
 ENTRYPOINT ["tail", "/dev/null"]
