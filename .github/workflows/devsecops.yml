@@ -96,12 +96,13 @@ jobs:
       - name: Run OWASP dep-scan
         run: |
           docker run --rm \
-            -v ${{ github.workspace }}:/app \
-            ghcr.io/owasp-dep-scan/dep-scan:v5.3.2 \
-            --src /app \
-            --type js \
-            --reports-dir /app/reports \
-            --no-error
+            -v ${{ github.workspace }}:/src \
+            owasp/dependency-check:latest \
+            --project "MyApp" \
+            --scan /src \
+            --format HTML \
+            --out /src/reports \
+            --failOnCVSS 7
 
       - name: Upload Report
         uses: actions/upload-artifact@v4
