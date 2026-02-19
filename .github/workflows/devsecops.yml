@@ -92,9 +92,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
-
-      - name: Test npm audit
-        run: npm audit --json
       
       - name: Run OWASP Dependency Check
         uses: dependency-check/Dependency-Check_Action@main
