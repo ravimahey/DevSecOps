@@ -92,6 +92,9 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
+
+      - name: Test npm audit
+        run: npm audit --json
       
       - name: Run OWASP Dependency Check
         uses: dependency-check/Dependency-Check_Action@main
@@ -105,7 +108,6 @@ jobs:
             --enableRetired
             --disableNodeAudit
 
-
       - name: Upload Report
         uses: actions/upload-artifact@v4
         if: always()
@@ -113,3 +115,8 @@ jobs:
           name: dependency-scan-report
           path: reports/
 
+      - name: OWASP Dependency Check Summary
+        uses: github/codeql-action/upload-sarif@v4
+        if: always()
+        with:
+          sarif_file: 'reports/dependency-check-report.sarif'
