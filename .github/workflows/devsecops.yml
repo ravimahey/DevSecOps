@@ -1,9 +1,11 @@
 name: DevSecOps Pipeline
 
 on:
-  push:
+  pull_request:
+    types: [opened, synchronize, reopened]
     branches:
       - main
+      - dev
 
 permissions:
   contents: read
