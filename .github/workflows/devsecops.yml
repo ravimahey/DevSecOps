@@ -153,7 +153,8 @@ jobs:
   container-security:
     name: Container Security Scanning
     runs-on: ubuntu-latest
-    if: contains(github.event.pull_request.changed_files, 'Dockerfile') || contains(github.event.pull_request.changed_files, 'docker-compose.yml')
+    outputs:
+      docker_changed: ${{ steps.changes.outputs.docker }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
