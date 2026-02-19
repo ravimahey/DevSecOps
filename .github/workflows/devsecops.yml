@@ -82,3 +82,7 @@ jobs:
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
+          directory: ./coverage/reports/
+          flags: unittests
+          name: codecov-umbrella
+          files: ./coverage1.xml,./coverage2.xml,!./cache
