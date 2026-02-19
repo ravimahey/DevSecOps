@@ -94,18 +94,17 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Run OWASP dep-scan
-            run: |
-              docker run --rm \
-                -v ${{ github.workspace }}:/app \
-                ghcr.io/owasp-dep-scan/dep-scan:v5.3.2 \
-                --src /app \
-                --type js \
-                --reports-dir /app/reports \
-                --no-error
+        run: |
+          docker run --rm \
+            -v ${{ github.workspace }}:/app \
+            ghcr.io/owasp-dep-scan/dep-scan:v5.3.2 \
+            --src /app \
+            --type js \
+            --reports-dir /app/reports \
+            --no-error
 
       - name: Upload Report
         uses: actions/upload-artifact@v4
         with:
           name: dependency-scan-report
           path: reports/
-          
