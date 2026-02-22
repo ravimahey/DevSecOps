@@ -202,4 +202,57 @@ jobs:
         uses: github/codeql-action/upload-sarif@v3
         if: always()
         with:
+
           sarif_file: 'grype-results.sarif'
+
+  notify-slack:
+    name: Notify Slack
+    runs-on: ubuntu-latest
+    if: always()
+    needs: [secret-scanning, code-quality, unit-tests, dependency-scan, sast-analysis, container-security]
+    steps:
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Send Slack Notification
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
+        run: |
+          # Determine workflow conclusion
+          if [ "${{ job.status }}" == "success" ]; then
+            COLOR="#36a64f"
+            STATUS_TEXT="✅ Workflow completed successfully!"
+          else
+            COLOR="#ff0000"
+            STATUS_TEXT="❌ Workflow failed!"
+          fi
+
+          PAYLOAD=$(jq -n \
+            --arg text "PR Validation Pipeline Update" \
+            --arg color "$COLOR" \
+            --arg pretext "$STATUS_TEXT" \
+            --arg repo "${{ github.repository }}" \
+            --arg branch "${{ github.ref_name }}" \
+            --arg run_id "${{ github.run_id }}" \
+            --arg url "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            '{
+              attachments: [
+                {
+                  fallback: $pretext,
+                  color: $color,
+                  pretext: $pretext,
+                  author_name: "GitHub Actions",
+                  title: "PR Validation Pipeline",
+                  title_link: $url,
+                  text: "Branch: \($branch)\nRepository: \($repo)\nRun ID: \($run_id)",
+                  footer: "GitHub Actions",
+                  ts: (now | floor)
+                }
+              ]
+            }')
+
+          curl -X POST https://slack.com/api/chat.postMessage \
+            -H "Authorization: Bearer $SLACK_BOT_TOKEN" \
+            -H "Content-type: application/json" \
+            --data "{\"channel\":\"$SLACK_CHANNEL_ID\", \"attachments\": $PAYLOAD}"
